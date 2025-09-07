@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Background Solana Monitor</title>
+    <style>
+        :root {
+            --primary: #00ff88;
+            --secondary: #9945ff;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --dark: #141414;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #141414 0%, #1a1a1a 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: white;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        
+        .container {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 25px;
+            margin: 20px 0;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        h1 {
+            text-align: center;
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            text-align: center;
+            opacity: 0.8;
+            margin-bottom: 30px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--primary);
+            font-weight: 600;
+        }
+        
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.08);
+            color: white;
+            font-size: 16px;
+        }
+        
+        input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 10px 0;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 255, 136, 0.3);
+        }
+        
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+        
+        .status {
+            text-align: center;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            background: rgba(255, 255, 255, 0.05);
+        }
+        
+        .status-active {
+            background: rgba(16, 185, 129, 0.2);
+            border: 1px solid var(--success);
+        }
+        
+        .status-inactive {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid var(--danger);
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+        
+        .active { background: var(--success); animation: pulse 2s infinite; }
+        .inactive { background: var(--danger); }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        
+        .stat-card {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            opacity: 0.8;
+            text-transform: uppercase;
+        }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+        
+        .notification.show {
+            transform: translateX(0);
+        }
+        
+        .notification.success {
+            background: var(--success);
+        }
+        
+        .notification.error {
+            background: var(--danger);
+        }
+        
+        .background-info {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <h1>🚀 Background Solana Monitor</h1>
+    <p class="subtitle">Runs 24/7 even when browser is closed</p>
+    
+    <div class="container">
+        <div class="form-group">
+            <label for="telegramBotToken">🤖 Telegram Bot Token</label>
+            <input type="password" id="telegramBotToken" placeholder="1234567890:ABCDEF..." />
+        </div>
+        
+        <div class="form-group">
+            <label for="telegramChatId">💬 Telegram Chat ID</label>
+            <input type="text" id="telegramChatId" placeholder="-1001234567890" />
+        </div>
+        
+        <button class="btn btn-primary" id="startBtn" onclick="startBackgroundMonitoring()">
+            ▶️ Start Background Monitoring
+        </button>
+        
+        <button class="btn btn-danger" id="stopBtn" onclick="stopBackgroundMonitoring()" disabled>
+            ⏹️ Stop Monitoring
+        </button>
+    </div>
+    
+    <div class="status" id="statusBox">
+        <span class="status-indicator inactive" id="statusIndicator"></span>
+        <span id="statusText">Monitoring: INACTIVE</span>
+    </div>
+    
+    <div class="stats">
+        <div class="stat-card">
+            <div class="stat-value" id="tokensFound">0</div>
+            <div class="stat-label">Tokens Found</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="lastCheck">--:--</div>
+            <div class="stat-label">Last Check</div>
+        </div>
+    </div>
+    
+    <div class="background-info">
+        <p>🔮 <strong>Background Mode Active</strong></p>
+        <p>This monitor will continue running even when you close the browser tab or app.</p>
+        <p>You'll receive Telegram alerts for new Solana tokens every minute.</p>
+    </div>
+
+    <script>
+        let isMonitoring = false;
+        
+        function showNotification(message, type = 'success') {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => notification.classList.add('show'), 100);
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => notification.remove(), 300);
+            }, 4000);
+        }
+        
+        function updateStatus() {
+            const indicator = document.getElementById('statusIndicator');
+            const statusText = document.getElementById('statusText');
+            const statusBox = document.getElementById('statusBox');
+            const startBtn = document.getElementById('startBtn');
+            const stopBtn = document.getElementById('stopBtn');
+            
+            if (isMonitoring) {
+                indicator.className = 'status-indicator active';
+                statusText.textContent = 'Monitoring: ACTIVE (Background)';
+                statusBox.className = 'status status-active';
+                startBtn.disabled = true;
+                stopBtn.disabled = false;
+            } else {
+                indicator.className = 'status-indicator inactive';
+                statusText.textContent = 'Monitoring: INACTIVE';
+                statusBox.className = 'status status-inactive';
+                startBtn.disabled = false;
+                stopBtn.disabled = true;
+            }
+        }
+        
+        async function startBackgroundMonitoring() {
+            const botToken = document.getElementById('telegramBotToken').value;
+            const chatId = document.getElementById('telegramChatId').value;
+            
+            if (!botToken || !chatId) {
+                showNotification('Please enter Telegram credentials', 'error');
+                return;
+            }
+            
+            // Save credentials
+            localStorage.setItem('telegramBotToken', botToken);
+            localStorage.setItem('telegramChatId', chatId);
+            
+            // Register service worker
+            if ('serviceWorker' in navigator && 'PushManager' in window) {
+                try {
+                    const registration = await navigator.serviceWorker.register('/sw.js');
+                    console.log('Service Worker registered');
+                    
+                    // Send configuration to service worker
+                    registration.active.postMessage({
+                        type: 'START_MONITORING',
+                        config: { botToken, chatId }
+                    });
+                    
+                    isMonitoring = true;
+                    updateStatus();
+                    showNotification('Background monitoring started!', 'success');
+                    
+                } catch (error) {
+                    console.error('Service Worker registration failed:', error);
+                    showNotification('Background mode not supported', 'error');
+                }
+            } else {
+                showNotification('Background mode not supported in this browser', 'error');
+            }
+        }
+        
+        function stopBackgroundMonitoring() {
+            if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+                navigator.serviceWorker.controller.postMessage({
+                    type: 'STOP_MONITORING'
+                });
+            }
+            
+            isMonitoring = false;
+            updateStatus();
+            showNotification('Monitoring stopped', 'error');
+        }
+        
+        // Listen for updates from service worker
+        navigator.serviceWorker.addEventListener('message', event => {
+            const data = event.data;
+            
+            switch (data.type) {
+                case 'STATUS_UPDATE':
+                    document.getElementById('lastCheck').textContent = 
+                        new Date().toLocaleTimeString();
+                    document.getElementById('tokensFound').textContent = data.tokensFound;
+                    break;
+                    
+                case 'NEW_TOKEN':
+                    showNotification(`New token found: ${data.symbol}`, 'success');
+                    break;
+            }
+        });
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load saved settings
+            const savedToken = localStorage.getItem('telegramBotToken');
+            const savedChatId = localStorage.getItem('telegramChatId');
+            
+            if (savedToken) document.getElementById('telegramBotToken').value = savedToken;
+            if (savedChatId) document.getElementById('telegramChatId').value = savedChatId;
+            
+            // Check if already monitoring
+            if (localStorage.getItem('monitoringActive') === 'true') {
+                isMonitoring = true;
+                updateStatus();
+            }
+            
+            updateStatus();
+        });
+    </script>
+</body>
+</html>
